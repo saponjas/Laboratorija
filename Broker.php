@@ -26,7 +26,7 @@ class Broker{
           throw new Exception($this->mysqli->error);
         }
         $rez=[];
-            while($red=$rezultat->fetch_object()){
+            while($red=$rezultat->fetch_assoc()){
                 $rez[]=$red;
             }
         return $rez;

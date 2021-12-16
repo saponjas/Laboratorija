@@ -36,7 +36,7 @@ class AnalizaServis{
         $this->broker->izmeni("delete from laboratorija_analiza where laboratorija=".$labId." and analiza=".$aId);
     }
 
-    public function kreirajLa($laDto){
+    public function kreirajLA($laDto){
         $this->broker->izmeni("insert into laboratorija_analiza(laboratorija,analiza,cena,trajanje) values ("
                             .$laDto['laboratorija'].",".$laDto['analiza'].",".$laDto['cena'].",".$laDto['trajanje'].")");
     }

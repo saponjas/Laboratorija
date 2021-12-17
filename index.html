@@ -25,7 +25,7 @@
                     <a class="nav-link" href="index.html">Laboratorije</a>
                 </li>
                 <li class="nav-item mx-auto">
-                    <a class="nav-link" href="ispiti.html">Analize</a>
+                    <a class="nav-link" href="analize.html">Analize</a>
                 </li>
             </ul>
         </div>
@@ -34,7 +34,7 @@
         <h1 class="text-center">Spisak laboratorija</h1>
 
         <div class="row d-flex justify-content-center mt-5">
-            <div class="col-6">
+            <div class="col-7">
                 <table class="table">
                     <thead>
                         <tr>
@@ -42,6 +42,7 @@
                             <th>Naziv</th>
                             <th>Adresa</th>
                             <th>Grad</th>
+                            <th>Analize</th>
                         </tr>
                     </thead>
                     <tbody id='laboratorije'>
@@ -73,14 +74,93 @@
             </div>
         </div>
     </div>
+
+    <div class="modal analize-modal" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog analize-modal" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Spisak analiza</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row ">
+                        <div class="col-6">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Naziv</th>
+                                        <th>Cena</th>
+                                        <th>Trajanje obrade</th>
+                                        <th>Obrisi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id='analize'>
+
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h3>Dodaj analizu</h3>
+                            <form id='formaAnaliza'>
+                                <div class='form-group'>
+                                    <div class='form-group'>
+                                        <label for="analiza">Analiza</label>
+                                        <select required class="form-control" id="analiza"></select>
+                                    </div>
+                                    <label for="cena">Cena</label>
+                                    <input required class="form-control" type="number" min="1" id="cena">
+                                </div>
+                                <div class='form-group'>
+                                    <label for="trajanje">Trajanje(h)</label>
+                                    <input required class="form-control" type="number" min="0" id="trajanje">
+                                </div>
+
+                                <button type="submit" class="btn btn-primary form-control">Dodaj</button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let laboratorije = [];
         let selId = 0;
+        let modalId = 0;
         $(document).ready(() => {
             ucitajLaboratorije();
+            ucitajAnalize()
             ucitajGradove()
+            $('#exampleModal').on('show.bs.modal', e => {
+                modalId = $(e.relatedTarget).data('id');
+                ucitajDetalje(modalId);
+
+            })
             $('#obrisiDugme').click(() => {
                 $.post('./handler/obrisiLaboratoriju.php', { id: selId }).then(obradiPost)
+            })
+            $('#formaAnaliza').submit(e => {
+                e.preventDefault();
+                const analiza = $('#analiza').val();
+                const cena = $('#cena').val();
+                const trajanje = $('#trajanje').val();
+                $.post('./handler/kreirajLA.php', {
+                    laboratorija: modalId,
+                    analiza,
+                    cena,
+                    trajanje
+                }).then(res => {
+                    res = JSON.parse(res);
+                    if (res.status !== 200) {
+                        alert(res.error);
+                    }
+                    ucitajDetalje();
+                })
             })
             $('#forma').submit(e => {
                 e.preventDefault();
@@ -102,6 +182,38 @@
                 }
             })
         })
+        function ucitajDetalje() {
+            $.getJSON('./handler/vratiAnalizeIzLaboratorije.php?id=' + modalId).then(res => {
+                if (res.status !== 200) {
+                    alert(res.error);
+                    return;
+                }
+                $('#analize').html('');
+                for (let element of res.body) {
+                    $('#analize').append(`
+                    <tr>
+                        <td>${element.naziv}</td>
+                        <td>${element.cena}</td>
+                        <td>${element.trajanje}</td>
+                        <td>
+                        <button class='btn btn-danger form-control' onClick="obrisiAnalizu(${modalId},${element.analiza})" >Obrisi</button>
+                    </td>
+                    </tr>
+                    `)
+                }
+            })
+        }
+        function ucitajAnalize() {
+            $.getJSON('./handler/vratiSveAnalize.php').then(res => {
+                if (res.status !== 200) {
+                    alert(res.error);
+                    return;
+                }
+                for (let analiza of res.body) {
+                    $('#analiza').append(`<option value='${analiza.id}'>${analiza.naziv}</option>`)
+                }
+            })
+        }
         function ucitajGradove() {
             $.getJSON('./handler/vratiSveGradove.php').then(val => {
                 if (val.status !== 200) {
@@ -137,6 +249,9 @@
                     <td>${laboratorija.naziv}</td>
                     <td>${laboratorija.adresa}</td>
                     <td>${laboratorija.naziv_grada}</td>
+                    <td>
+                        <button data-toggle='modal' data-target='#exampleModal' data-id='${laboratorija.id}' class='btn btn-success form-control' >Vidi</button>
+                    </td>
                 </tr>
                 `)
             }
@@ -182,6 +297,16 @@
             $('#grad').val(lab.grad);
             $('#obrisiDugme').attr('hidden', false);
             $('#sacuvajDugme').html('Izmeni');
+        }
+
+        function obrisiAnalizu(lab, analiza) {
+            $.post('./handler/obrisiLa.php', { laboratorija: lab, analiza }).then(res => {
+                res = JSON.parse(res);
+                if (res.status !== 200) {
+                    alert(res.error);
+                }
+                ucitajDetalje()
+            })
         }
     </script>
 </body>

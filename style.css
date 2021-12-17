@@ -5,3 +5,8 @@
 .selected{
     background-color: rgb(185, 184, 184);
 }
+.analize-modal{
+    max-width: none !important;
+    width: 100%;
+    padding:40px 150px;
+}

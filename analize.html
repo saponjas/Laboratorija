@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analize</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top bg-dark">
+
+
+        <div class="navbar-collapse collapse">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item mx-auto">
+                    <a class="nav-link" href="index.html">Laboratorije</a>
+                </li>
+                <li class="nav-item mx-auto">
+                    <a class="nav-link" href="ispiti.html">Analize</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="mt-5 container">
+        <h1 class="text-center">Spisak analiza</h1>
+
+        <div class="row d-flex justify-content-center mt-5">
+            <div class="col-4">
+                <div class="m-4">
+                    <input type="text" class="form-control" id="pretraga" placeholder="Pretrazi...">
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Naziv</th>
+                        </tr>
+                    </thead>
+                    <tbody id='analize'>
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-1">
+
+            </div>
+            <div class="col-4">
+                <h2 class="text-center">Forma analiza</h2>
+                <form id='forma' class="mt-3">
+                    <div class='form-group'>
+                        <label for="naziv">Naziv</label>
+                        <input required class="form-control" id="naziv">
+                    </div>
+                    <button type="submit" id='sacuvajDugme' class="btn btn-primary form-control">Kreiraj</button>
+                </form>
+                <button type="submit" id='obrisiDugme' hidden class="btn btn-danger form-control mt-2">Obrisi</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let analize = [];
+        let selId = 0;
+        $(document).ready(() => {
+            ucitajAnalize();
+            $('#pretraga').change(isrtajAnalize);
+            $('#obrisiDugme').click(() => {
+                $.post('./handler/obrisiAnalizu.php', { id: selId }).then(obradiPost)
+            })
+            $('#forma').submit(e => {
+                e.preventDefault();
+                const naziv = $('#naziv').val();
+                if (selId) {
+                    $.post('./handler/izmeniAnalizu.php?id=' + selId, {
+                        naziv
+                    }).then(obradiPost);
+                } else {
+                    $.post('./handler/kreirajAnalizu.php', {
+                        naziv
+                    }).then(obradiPost);
+                }
+            })
+        })
+        function ucitajAnalize() {
+            $.getJSON('./handler/vratiSveAnalize.php').then(res => {
+                if (res.status !== 200) {
+                    alert(res.error);
+                    return;
+                }
+                analize = res.body;
+                isrtajAnalize();
+            })
+        }
+        function isrtajAnalize() {
+
+            const pretraga = $("#pretraga").val();
+            const filtrirano = analize.filter(e => e.naziv.toLocaleLowerCase().includes(pretraga.toLocaleLowerCase()));
+            $('#analize').html('');
+
+            for (let analiza of filtrirano) {
+                $('#analize').append(`
+                <tr id='red-${analiza.id}' class='red' onClick="selektujRed(${analiza.id})">
+                    <td>${analiza.id}</td>
+                    <td>${analiza.naziv}</td>
+                </tr>
+                `)
+            }
+
+            const analiza = filtrirano.find(e => e.id == selId);
+            if (!ispit) {
+                selektujRed(0);
+            }
+        }
+        function obradiPost(res) {
+            res = JSON.parse(res);
+            if (!res.status === 200) {
+                alert(res.status);
+            }
+            selektujRed(0);
+            ucitajAnalize();
+        }
+        function selektujRed(idReda) {
+            if (idReda === selId) {
+                selId = 0;
+            } else {
+                selId = idReda;
+            }
+            const analiza = selId === 0 ? undefined : analize.find(e => e.id == selId);
+
+            $('#analize').children().each((index, element) => {
+                if (element.id === 'red-' + selId) {
+                    element.className = 'red selected'
+                } else {
+                    element.className = 'red'
+                }
+            })
+            if (!analiza) {
+                $('#naziv').val('');
+                $('#obrisiDugme').attr('hidden', true);
+                $('#sacuvajDugme').html('Kreiraj');
+                return;
+            }
+            $('#naziv').val(analiza.naziv);
+            $('#obrisiDugme').attr('hidden', false);
+            $('#sacuvajDugme').html('Izmeni');
+        }
+    </script>
+</body>
+
+</html>

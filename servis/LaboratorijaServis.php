@@ -1,5 +1,5 @@
 <?php
-class AnalizaServis{
+class LaboratorijaServis{
     private $broker;
 
     public function __construct($b){
@@ -7,7 +7,7 @@ class AnalizaServis{
     }
 
     public function vratiSve(){
-        return $this->broker->ucitajKolekciju("select l.*, g.naziv as 'naziv_grada' from laboratorija l inner join grad g on (l.grad-g.id)");
+        return $this->broker->ucitajKolekciju("select l.*, g.naziv as 'naziv_grada' from laboratorija l inner join grad g on (l.grad=g.id)");
     }
     public function vratiJednu($id){
         $res=$this->broker->ucitajKolekciju("select l.*, g.naziv as 'naziv_grada' from laboratorija l inner join grad g on (l.grad-g.id) where l.id=".$id);

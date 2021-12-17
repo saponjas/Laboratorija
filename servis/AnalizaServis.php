@@ -16,6 +16,9 @@ class AnalizaServis{
     public function kreiraj($analiza){
         $this->broker->izmeni("insert into analiza (naziv) values ('".$analiza['naziv']."')");
     }
+    public function izmeni($id,$analiza){
+        $this->broker->izmeni("update analiza set naziv='".$analiza['naziv']."' where id=".$id);
+    }
 }
 
 ?>

@@ -8,7 +8,7 @@ class Broker{
     
     
     private function __construct(){
-        $this->mysqli = new mysqli("localhost", "root", "", "seminarski_iteh");
+        $this->mysqli = new mysqli("localhost", "root", "", "laboratorije");
         $this->mysqli->set_charset("utf8");
     }
 

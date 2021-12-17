@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analize</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top bg-dark">
+
+
+        <div class="navbar-collapse collapse">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item mx-auto">
+                    <a class="nav-link" href="index.html">Laboratorije</a>
+                </li>
+                <li class="nav-item mx-auto">
+                    <a class="nav-link" href="ispiti.html">Analize</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="mt-5 container">
+        <h1 class="text-center">Spisak laboratorija</h1>
+
+        <div class="row d-flex justify-content-center mt-5">
+            <div class="col-6">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Naziv</th>
+                            <th>Adresa</th>
+                            <th>Grad</th>
+                        </tr>
+                    </thead>
+                    <tbody id='laboratorije'>
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-1">
+
+            </div>
+            <div class="col-4">
+                <h2 class="text-center">Forma laboratorija</h2>
+                <form id='forma' class="mt-3">
+                    <div class='form-group'>
+                        <label for="naziv">Naziv</label>
+                        <input required class="form-control" id="naziv">
+                    </div>
+                    <div class='form-group'>
+                        <label for="adresa">Adresa</label>
+                        <input required class="form-control" id="adresa">
+                    </div>
+                    <div class='form-group'>
+                        <label for="grad">Grad</label>
+                        <select required class="form-control" id="grad"></select>
+                    </div>
+                    <button type="submit" id='sacuvajDugme' class="btn btn-primary form-control">Kreiraj</button>
+                </form>
+                <button type="submit" id='obrisiDugme' hidden class="btn btn-danger form-control mt-2">Obrisi</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let laboratorije = [];
+        let selId = 0;
+        $(document).ready(() => {
+            ucitajLaboratorije();
+            ucitajGradove()
+            $('#obrisiDugme').click(() => {
+                $.post('./handler/obrisiLaboratoriju.php', { id: selId }).then(obradiPost)
+            })
+            $('#forma').submit(e => {
+                e.preventDefault();
+                const naziv = $('#naziv').val();
+                const adresa = $('#adresa').val();
+                const grad = $('#grad').val();
+                if (selId) {
+                    $.post('./handler/izmeniLaboratoriju.php?id=' + selId, {
+                        naziv,
+                        adresa,
+                        grad
+                    }).then(obradiPost);
+                } else {
+                    $.post('./handler/kreirajLaboratoriju.php', {
+                        naziv,
+                        adresa,
+                        grad
+                    }).then(obradiPost);
+                }
+            })
+        })
+        function ucitajGradove() {
+            $.getJSON('./handler/vratiSveGradove.php').then(val => {
+                if (val.status !== 200) {
+                    alert(val.error);
+                    return;
+                }
+                for (let grad of val.body) {
+                    $('#grad').append(`
+                    <option value='${grad.id}'>
+                        ${grad.naziv}
+                    </option>
+                    `)
+                }
+            })
+        }
+        function ucitajLaboratorije() {
+            $.getJSON('./handler/vratiSveLaboratorije.php').then(res => {
+                if (res.status !== 200) {
+                    alert(res.error);
+                    return;
+                }
+                laboratorije = res.body;
+                iscrtajLaboratorije();
+            })
+        }
+        function iscrtajLaboratorije() {
+            $('#laboratorije').html('');
+
+            for (let laboratorija of laboratorije) {
+                $('#laboratorije').append(`
+                <tr id='red-${laboratorija.id}' class='red' onClick="selektujRed(${laboratorija.id})">
+                    <td>${laboratorija.id}</td>
+                    <td>${laboratorija.naziv}</td>
+                    <td>${laboratorija.adresa}</td>
+                    <td>${laboratorija.naziv_grada}</td>
+                </tr>
+                `)
+            }
+
+            const laboratorija = laboratorije.find(e => e.id == selId);
+            if (!laboratorija) {
+                selektujRed(0);
+            }
+        }
+        function obradiPost(res) {
+            res = JSON.parse(res);
+            if (!res.status === 200) {
+                alert(res.status);
+            }
+            selektujRed(0);
+            ucitajLaboratorije();
+        }
+        function selektujRed(idReda) {
+            if (idReda === selId) {
+                selId = 0;
+            } else {
+                selId = idReda;
+            }
+            const lab = selId === 0 ? undefined : laboratorije.find(e => e.id == selId);
+
+            $('#laboratorije').children().each((index, element) => {
+                if (element.id === 'red-' + selId) {
+                    element.className = 'red selected'
+                } else {
+                    element.className = 'red'
+                }
+            })
+            if (!lab) {
+                $('#naziv').val('');
+                $('#adresa').val('');
+                $('#grad').val('');
+                $('#obrisiDugme').attr('hidden', true);
+                $('#sacuvajDugme').html('Kreiraj');
+                return;
+            }
+            $('#naziv').val(lab.naziv);
+            $('#adresa').val(lab.adresa);
+            $('#grad').val(lab.grad);
+            $('#obrisiDugme').attr('hidden', false);
+            $('#sacuvajDugme').html('Izmeni');
+        }
+    </script>
+</body>
+
+</html>

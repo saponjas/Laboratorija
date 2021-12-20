@@ -127,7 +127,6 @@
             </div>
         </div>
     </div>
-
     <script>
         let laboratorije = [];
         let selId = 0;
@@ -264,7 +263,7 @@
         function obradiPost(res) {
             res = JSON.parse(res);
             if (!res.status === 200) {
-                alert(res.status);
+                alert(res.error);
             }
             selektujRed(0);
             ucitajLaboratorije();

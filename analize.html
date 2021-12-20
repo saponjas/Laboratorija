@@ -121,8 +121,8 @@
         }
         function obradiPost(res) {
             res = JSON.parse(res);
-            if (!res.status === 200) {
-                alert(res.status);
+            if (res.status != 200) {
+                alert(res.error);
             }
             selektujRed(0);
             ucitajAnalize();
